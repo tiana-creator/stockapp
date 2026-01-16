@@ -3,78 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>股票交易同步工具</title>
+    <title>股票交易紀錄 App</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .active-tab { border-bottom: 4px solid #6366f1; color: #6366f1; }
+        .hidden { display: none; }
+        /* 讓清單滾動更順暢 */
+        #page-list { height: calc(100vh - 64px); }
+    </style>
 </head>
-<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+<body class="bg-gray-50 min-h-screen font-sans">
 
-    <div class="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
-        <div class="bg-indigo-600 p-6">
-            <h1 class="text-white text-2xl font-bold flex items-center gap-2">
-                <span>📈</span> 交易紀錄同步器
-            </h1>
-            <p class="text-indigo-100 text-sm mt-1">資料將同步至您的 Google 試算表</p>
+    <div class="max-w-md mx-auto bg-white min-h-screen shadow-xl flex flex-col relative">
+        
+        <div class="flex border-b sticky top-0 bg-white z-10">
+            <button onclick="showPage('form')" id="tab-form" class="flex-1 py-4 font-bold active-tab transition-all">➕ 新增交易</button>
+            <button onclick="showPage('list')" id="tab-list" class="flex-1 py-4 font-bold text-gray-400 transition-all">📜 歷史紀錄</button>
         </div>
 
-        <div class="p-6 space-y-4">
+        <div id="page-form" class="p-6 space-y-5">
             <div>
-                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">成交時間 (自動)</label>
-                <input type="text" id="time" readonly class="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-600 focus:outline-none">
+                <label class="block text-xs font-semibold text-gray-500 mb-1">成交時間</label>
+                <input type="text" id="time" readonly class="w-full bg-gray-100 p-3 rounded-xl text-gray-600 outline-none border border-transparent focus:border-indigo-300">
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 mb-1">股票代號</label>
+                    <input type="text" id="stockId" placeholder="例如: 2330" class="w-full border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 mb-1">股票名稱</label>
+                    <input type="text" id="stockName" placeholder="例如: 台積電" class="w-full border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">股票代號</label>
-                    <input type="text" id="stockId" placeholder="例如: 2330" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <label class="block text-xs font-semibold text-gray-500 mb-1">成本價</label>
+                    <input type="number" id="price" oninput="calc()" placeholder="0.00" class="w-full border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">股票名稱</label>
-                    <input type="text" id="stockName" placeholder="例如: 台積電" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <label class="block text-xs font-semibold text-gray-500 mb-1">交易股數</label>
+                    <input type="number" id="shares" oninput="calc()" placeholder="1000" class="w-full border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">成本價</label>
-                    <input type="number" id="price" step="0.01" oninput="calc()" placeholder="0.00" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">交易股數</label>
-                    <input type="number" id="shares" oninput="calc()" placeholder="1000" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none">
-                </div>
+            <div class="bg-indigo-50 p-5 rounded-2xl flex justify-between items-center border border-indigo-100">
+                <span class="text-indigo-700 font-bold">總計金額</span>
+                <span id="totalDisplay" class="text-2xl font-black text-indigo-800">$ 0</span>
             </div>
 
-            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
-                <div class="flex justify-between items-center">
-                    <span class="text-indigo-700 font-medium">總計金額</span>
-                    <span id="totalDisplay" class="text-2xl font-black text-indigo-800">$ 0</span>
-                </div>
-            </div>
-
-            <button onclick="submitData()" id="btn" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-lg">
+            <button onclick="submitData()" id="btn" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 active:scale-[0.98] transition-all shadow-lg shadow-indigo-100">
                 傳送交易紀錄
             </button>
+            <p id="status" class="text-center text-sm font-medium text-gray-500 min-h-[20px]"></p>
+        </div>
 
-            <p id="status" class="text-center text-sm font-medium text-gray-500 h-5"></p>
+        <div id="page-list" class="hidden p-4 flex-1 overflow-y-auto bg-gray-50">
+            <div class="flex justify-between items-center mb-4 px-2">
+                <h2 class="font-bold text-gray-700">最近成交項目</h2>
+                <button onclick="fetchData()" class="text-xs bg-white border border-gray-300 px-3 py-1.5 rounded-full text-gray-600 shadow-sm hover:bg-gray-50 active:bg-gray-100">🔄 刷新列表</button>
+            </div>
+            
+            <div id="dataContainer" class="space-y-3 pb-10">
+                <p class="text-center text-gray-400 py-10 text-sm">點擊下方按鈕或刷新來載入資料</p>
+            </div>
         </div>
     </div>
 
     <script>
+        // 您提供的 Google Apps Script 網址
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIEAik4knfvK3aLbPDYRadylqYMLR73d5mTlpKlIN62eGJEVUF9lBwvO_RYAsOallC6w/exec";
 
-        // 更新時間
+        // 分頁切換
+        function showPage(page) {
+            document.getElementById('page-form').classList.toggle('hidden', page !== 'form');
+            document.getElementById('page-list').classList.toggle('hidden', page !== 'list');
+            document.getElementById('tab-form').classList.toggle('active-tab', page === 'form');
+            document.getElementById('tab-list').classList.toggle('active-tab', page === 'list');
+            document.getElementById('tab-form').classList.toggle('text-gray-400', page !== 'form');
+            document.getElementById('tab-list').classList.toggle('text-gray-400', page !== 'list');
+            
+            if (page === 'list') {
+                fetchData();
+            }
+        }
+
+        // 即時時間更新
         function updateTime() {
             const now = new Date();
-            const formatted = now.getFullYear() + "/" + (now.getMonth()+1) + "/" + now.getDate() + " " + 
-                            now.getHours().toString().padStart(2, '0') + ":" + 
-                            now.getMinutes().toString().padStart(2, '0') + ":" + 
-                            now.getSeconds().toString().padStart(2, '0');
-            document.getElementById('time').value = formatted;
+            const y = now.getFullYear();
+            const m = (now.getMonth() + 1).toString().padStart(2, '0');
+            const d = now.getDate().toString().padStart(2, '0');
+            const h = now.getHours().toString().padStart(2, '0');
+            const min = now.getMinutes().toString().padStart(2, '0');
+            const s = now.getSeconds().toString().padStart(2, '0');
+            document.getElementById('time').value = `${y}/${m}/${d} ${h}:${min}:${s}`;
         }
         setInterval(updateTime, 1000);
         updateTime();
 
-        // 計算總額
+        // 計算總金額
         function calc() {
             const p = document.getElementById('price').value || 0;
             const s = document.getElementById('shares').value || 0;
@@ -82,64 +112,90 @@
             document.getElementById('totalDisplay').innerText = "$ " + total.toLocaleString();
         }
 
-        // 送出資料
+        // 傳送資料到 Google Sheet (POST)
         async function submitData() {
             const btn = document.getElementById('btn');
             const status = document.getElementById('status');
-            
-            const price = document.getElementById('price').value;
-            const shares = document.getElementById('shares').value;
+            const p = document.getElementById('price').value;
+            const s = document.getElementById('shares').value;
             
             const data = {
                 time: document.getElementById('time').value,
                 stockId: document.getElementById('stockId').value,
                 stockName: document.getElementById('stockName').value,
-                price: price,
-                shares: shares,
-                total: Math.round(price * shares)
+                price: p,
+                shares: s,
+                total: Math.round(p * s)
             };
 
-            if(!data.stockId || !price || !shares) {
-                alert("請填寫完整的股票資訊、單價與股數");
-                return;
-            }
+            if(!data.stockId || !p || !s) return alert("請填寫完整的股票資訊");
 
             btn.disabled = true;
-            btn.classList.add('opacity-50');
-            status.innerText = "⏳ 正在同步至 Google 試算表...";
+            btn.innerText = "正在同步中...";
+            status.innerText = "⏳ 正在寫入雲端試算表...";
 
             try {
-                // 使用 no-cors 模式解決跨網域問題
+                // 使用 no-cors 模式確保 POST 成功
                 await fetch(SCRIPT_URL, {
                     method: "POST",
                     mode: "no-cors",
                     cache: "no-cache",
-                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(data)
                 });
 
-                status.innerText = "✅ 儲存成功！請查看試算表";
-                status.classList.add('text-green-600');
+                status.innerText = "✅ 儲存成功！";
+                status.className = "text-center text-sm font-medium text-green-600";
                 
                 // 清空欄位
-                document.getElementById('stockId').value = '';
-                document.getElementById('stockName').value = '';
-                document.getElementById('price').value = '';
-                document.getElementById('shares').value = '';
+                ['stockId', 'stockName', 'price', 'shares'].forEach(id => document.getElementById(id).value = '');
                 document.getElementById('totalDisplay').innerText = "$ 0";
 
-                setTimeout(() => {
-                    status.innerText = "";
-                    status.classList.remove('text-green-600');
-                }, 3000);
-
+                setTimeout(() => { status.innerText = ""; }, 3000);
             } catch (e) {
-                console.error(e);
-                status.innerText = "❌ 傳送失敗，請檢查網址或權限";
-                status.classList.add('text-red-600');
+                alert("傳送失敗，請確認網路或 Script 設定");
             } finally {
                 btn.disabled = false;
-                btn.classList.remove('opacity-50');
+                btn.innerText = "傳送交易紀錄";
+            }
+        }
+
+        // 從 Google Sheet 讀取資料 (GET)
+        async function fetchData() {
+            const container = document.getElementById('dataContainer');
+            container.innerHTML = '<div class="text-center py-10"><div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div><p class="text-gray-400 text-sm mt-2">從雲端讀取紀錄中...</p></div>';
+            
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const data = await response.json();
+                
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p class="text-center text-gray-400 py-10 text-sm">目前尚無歷史紀錄</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                // 反轉陣列讓最新資料在最上面
+                data.slice().reverse().forEach(item => {
+                    container.innerHTML += `
+                        <div class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-lg font-black text-gray-800">${item.stockId}</span>
+                                        <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">${item.stockName}</span>
+                                    </div>
+                                    <div class="text-[10px] text-gray-400 mt-2 font-mono">${item.time}</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-indigo-600 font-black text-xl">$${Number(item.total).toLocaleString()}</div>
+                                    <div class="text-[11px] text-gray-400 font-medium">單價 ${item.price} / 股數 ${item.shares}</div>
+                                </div>
+                            </div>
+                        </div>`;
+                });
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = '<div class="bg-red-50 p-4 rounded-xl text-center"><p class="text-red-500 text-sm">讀取失敗</p><p class="text-xs text-red-400">請確認 Apps Script 已部署並開啟權限</p></div>';
             }
         }
     </script>
